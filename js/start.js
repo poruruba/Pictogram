@@ -25,7 +25,7 @@ var vue_options = {
     methods: {
         snap_shot: function(){
             var data = canvasElement.toDataURL('image/jpeg', 0.85);
-            this.snapshots.push({ type: 'image/jpg', data: data } );
+            this.snapshots.push({ type: 'image/jpeg', data: data } );
             var index = this.snapshots.length;
             siiimpleToast.success( "<p>" + index + " 静止画</p><img src='" + data + "' width='320px' height='180px'><img>", { position: 'bottom|right' });
         },
