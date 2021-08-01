@@ -80,9 +80,6 @@ var vue_options = {
     mounted: function(){
         proc_load();
 
-        setTimeout(() =>{
-            this.snap_shot();
-        }, 10000);
     }
 };
 vue_add_data(vue_options, { progress_title: '' }); // for progress-dialog
