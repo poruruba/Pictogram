@@ -8,6 +8,8 @@ const view_height = 720;
 const PICTO_BACKGROUND = '#ffffff';
 const PICTO_FOREGROUND = '#000080';
 
+var g_recorder = null;
+
 var vue_options = {
     el: "#top",
     mixins: [mixins_bootstrap],
@@ -15,22 +17,58 @@ var vue_options = {
         snapshots: [],
         view_width: view_width,
         view_height: view_height,
+        record_fps: 30,
+        recording: false,
     },
     computed: {
     },
     methods: {
         snap_shot: function(){
             var data = canvasElement.toDataURL('image/jpeg', 0.85);
-            this.snapshots.push(data);
+            this.snapshots.push({ type: 'image/jpg', data: data } );
             var index = this.snapshots.length;
-            siiimpleToast.success( "<p>" + index + "</p><img src='" + data + "' width='320px' height='180px'><img>", { position: 'bottom|right' });
+            siiimpleToast.success( "<p>" + index + " 静止画</p><img src='" + data + "' width='320px' height='180px'><img>", { position: 'bottom|right' });
         },
-        snap_save: function(data){
+        snap_save: function(item){
             var a = document.createElement('a');
-            a.href = data;
-            a.download = 'snapshot.jpg';
+            a.href = item.data;
+            if( item.type.startsWith('image') )
+                a.download = 'snapshot.jpg';
+            else if( item.type.startsWith('video') )
+                a.download = 'snapshot.webm';
             a.click();
             window.URL.revokeObjectURL(a.href);
+        },
+        record_start: function(){
+            this.recording = true;
+            var stream = canvasElement.captureStream(this.record_fps);
+            this.record_chunks = [];
+            g_recorder = new MediaRecorder(stream);
+            g_recorder.ondataavailable = this.record_onavailable;
+            g_recorder.onstop = this.record_onstop;
+            this.image = canvasElement.toDataURL('image/jpeg', 0.85);
+            g_recorder.start();
+        },
+        record_stop: function () {
+//            console.log('stop');
+            g_recorder.stop();
+        },
+        record_onavailable: function (e) {
+//            console.log('ondataavailable');
+            this.record_chunks.push(e.data);
+        },
+        record_onstop: function () {
+            if (!this.recording)
+                return;
+
+//            console.log('onstop');
+            var blob = new Blob(this.record_chunks, { type: g_recorder.mimeType });
+            this.snapshots.push({ type: g_recorder.mimeType, data: URL.createObjectURL(blob), image: this.image } );
+            this.chunks = [];
+            g_recorder = null;
+            this.recording = false;
+            var index = this.snapshots.length;
+            siiimpleToast.success("<p>" + index + " 動画</p><img src='" + this.image + "' width='320px' height='180px'><img>", { position: 'bottom|right' });
         },
     },
     created: function(){
@@ -38,6 +76,9 @@ var vue_options = {
     mounted: function(){
         proc_load();
 
+        setTimeout(() =>{
+            this.snap_shot();
+        }, 10000);
     }
 };
 vue_add_data(vue_options, { progress_title: '' }); // for progress-dialog
