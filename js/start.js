@@ -8,6 +8,10 @@ const view_height = 720;
 const PICTO_BACKGROUND = '#ffffff';
 const PICTO_FOREGROUND = '#000080';
 
+const canvasElement = document.querySelector('#output_canvas');
+const canvasCtx = canvasElement.getContext('2d');
+const videoElement = document.querySelector('#input_video');
+
 var g_recorder = null;
 
 var vue_options = {
@@ -92,10 +96,6 @@ vue_add_global_components(components_utils);
 /* add additional components */
   
 window.vue = new Vue( vue_options );
-
-const canvasElement = document.querySelector('#output_canvas');
-const canvasCtx = canvasElement.getContext('2d');
-const videoElement = document.querySelector('#input_video');
 
 const pose = new Pose({
     locateFile: (file) => {
