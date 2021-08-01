@@ -67,7 +67,7 @@
                 </div>
                 <div class="panel-body">
                   <img v-if="item.type.startsWith('image')" class="img-thumbnail" v-bind:src="item.data" width="320" height="180">
-                  <video v-if="item.type.startsWith('video')" class="img-thumbnail" v-bind:src="item.data" width="320" height="180" controls>
+                  <video v-if="item.type.startsWith('video')" class="img-thumbnail" v-bind:src="item.data" width="320" height="180" controls></video>
                 </div>
                 <div class="panel-footer">
                   <button class="btn btn-default" v-on:click="snap_save(item)">保存</button>
