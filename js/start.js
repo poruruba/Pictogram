@@ -40,6 +40,10 @@ var vue_options = {
             window.URL.revokeObjectURL(a.href);
         },
         record_start: function(){
+            if (g_recorder) {
+                g_recorder.stop();
+                g_recorder = null;
+            }
             this.recording = true;
             var stream = canvasElement.captureStream(this.record_fps);
             this.record_chunks = [];
