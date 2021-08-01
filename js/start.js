@@ -69,6 +69,7 @@ var vue_options = {
             var blob = new Blob(this.record_chunks, { type: g_recorder.mimeType });
             this.snapshots.push({ type: g_recorder.mimeType, data: URL.createObjectURL(blob), image: this.image } );
             this.chunks = [];
+            this.image = null;
             g_recorder = null;
             this.recording = false;
             var index = this.snapshots.length;
