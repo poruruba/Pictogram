@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src * data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src * 'unsafe-inline'; media-src *; img-src * data: content: blob:;">
+  <meta http-equiv="Content-Security-Policy" content="default-src * data: gap: https://ssl.gstatic.com 'unsafe-eval' 'unsafe-inline'; style-src * 'unsafe-inline'; media-src * data: content: blob:; img-src * data: content: blob:;">
   <meta name="format-detection" content="telephone=no">
   <meta name="msapplication-tap-highlight" content="no">
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -41,7 +41,9 @@
 </head>
 <body>
     <div id="top" class="container">
-      <button class="btn btn-default pull-right" v-on:click="snap_shot">撮影</button>
+      <button class="btn btn-default pull-right" v-on:click="snap_shot">スナップショット</button>
+      <button v-if="!recording" class="btn btn-default pull-right" v-on:click="record_start">録画開始</button>
+      <button v-if="recording" class="btn btn-default pull-right" v-on:click="record_stop">◎録画終了</button>
 
       <ul class="nav nav-tabs">
         <li class="active"><a class="nav-link" href="#pictogram" data-toggle="tab">ピクトグラム</a></li>
@@ -59,9 +61,13 @@
           <div class="row">
             <div class="col-xs-4" v-for="(item, index) in snapshots">
               <div class="panel panel-default">
-                <div class="panel-heading">{{index + 1}}</div>
+                <div class="panel-heading">{{index + 1}}
+                  <span v-if="item.type.startsWith('image')">静止画</span>
+                  <span v-if="item.type.startsWith('video')">動画</span>
+                </div>
                 <div class="panel-body">
-                  <img class="img-thumbnail" v-bind:src="item" width="320" height="180">
+                  <img v-if="item.type.startsWith('image')" class="img-thumbnail" v-bind:src="item.data" width="320" height="180">
+                  <video v-if="item.type.startsWith('video')" class="img-thumbnail" v-bind:src="item.data" width="320" height="180" controls>
                 </div>
                 <div class="panel-footer">
                   <button class="btn btn-default" v-on:click="snap_save(item)">保存</button>
