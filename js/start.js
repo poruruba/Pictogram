@@ -7,8 +7,13 @@ const view_width = 1280;
 const view_height = 720;
 const PICTO_BACKGROUND = '#ffffff';
 const PICTO_FOREGROUND = '#000080';
+const PICTO_LINEWIDTH = 5;
 
 var g_recorder = null;
+var equip_index = 0;
+var tool_index = 0;
+const NUM_OF_EQUIP = 3;
+const NUM_OF_TOOL = 4;
 
 var vue_options = {
     el: "#top",
@@ -81,6 +86,7 @@ var vue_options = {
     mounted: function(){
         proc_load();
 
+        document.onkeydown = change_mode;
     }
 };
 vue_add_data(vue_options, { progress_title: '' }); // for progress-dialog
@@ -90,6 +96,22 @@ vue_add_global_components(components_utils);
 /* add additional components */
   
 window.vue = new Vue( vue_options );
+
+function change_mode(e) {
+    if (e.key == "ArrowRight") {
+        equip_index++;
+        if (equip_index > NUM_OF_EQUIP)
+            equip_index = 0;
+    }else
+    if (e.key == "ArrowLeft") {
+        tool_index++;
+        if (tool_index > NUM_OF_TOOL)
+            tool_index = 0;
+    }else
+    if (e.key == "ArrowUp") {
+        window.vue.snap_shot();
+    }
+}
 
 const canvasElement = document.querySelector('#output_canvas');
 const canvasCtx = canvasElement.getContext('2d');
@@ -120,17 +142,42 @@ camera.start();
 
 function drawCircle(pos, r){
     canvasCtx.beginPath();
-    canvasCtx.arc(pos.x * canvasElement.width, pos.y * canvasElement.height, r, 0, 2 * Math.PI);
+    canvasCtx.arc(pos.x, pos.y, r, 0, 2 * Math.PI);
+    canvasCtx.fill();
+}
+
+function drawEllipse(pos, rx, ry, rad){
+    canvasCtx.beginPath();
+    canvasCtx.ellipse(pos.x, pos.y, rx, ry, rad, 0, 2 * Math.PI);
+    canvasCtx.fill();
+}
+
+function strokeEllipse(pos, rx, ry, rad) {
+    canvasCtx.beginPath();
+    canvasCtx.ellipse(pos.x, pos.y, rx, ry, rad, 0, 2 * Math.PI);
+    canvasCtx.stroke();
+}
+
+function drawPole( pos1, pos2, r){
+    var p = calcRange(pos1.x, pos1.y, pos2.x, pos2.y, r, r);
+
+    canvasCtx.beginPath();
+    canvasCtx.lineTo(p.q3x, p.q3y);
+    canvasCtx.lineTo(p.q4x, p.q4y);
+    canvasCtx.lineTo(p.q6x, p.q6y);
+    canvasCtx.lineTo(p.q5x, p.q5y);
+    canvasCtx.fill();
+
+    canvasCtx.beginPath();
+    canvasCtx.arc(p.q1x, p.q1y, r, 0, 2 * Math.PI);
+    canvasCtx.fill();
+    canvasCtx.beginPath();
+    canvasCtx.arc(p.q2x, p.q2y, r, 0, 2 * Math.PI);
     canvasCtx.fill();
 }
 
 function drawParts(pos1, pos2, r1, r2){
-    var x1 = pos1.x * canvasElement.width;
-    var y1 = pos1.y * canvasElement.height;
-    var x2 = pos2.x * canvasElement.width;
-    var y2 = pos2.y * canvasElement.height;
-
-    var p = calcRange(x1, y1, x2, y2, r1, r2);
+    var p = calcRange(pos1.x, pos1.y, pos2.x, pos2.y, r1, r2);
 
     canvasCtx.beginPath();
     canvasCtx.moveTo(p.q1x, p.q1y);
@@ -169,11 +216,24 @@ function dimension(array){
     return sum / array.length;
 }
 
+function distance( pos1, pos2 ){
+    return Math.sqrt(Math.pow(pos1.x - pos2.x, 2) + Math.pow(pos1.y - pos2.y, 2));
+}
+
+function convertPosition(landmarks){
+    var pos = [];
+    for( var i = 0 ; i <= 32 ; i++ ){
+        pos[i] = { x: landmarks[i].x * canvasElement.width, y: landmarks[i].y * canvasElement.height };
+    }
+
+    return pos;
+}
+
 function onResults(results)
 {
 //    videoCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-    if (!results.poseLandmarks || results.poseLandmarks.length < 31 )
+    if (!results.poseLandmarks || results.poseLandmarks.length < 33 )
         return;
 
     // 全体を背景色で塗りつぶし
@@ -181,24 +241,93 @@ function onResults(results)
     canvasCtx.fillRect(0, 0, canvasElement.width, canvasElement.height);
 
     canvasCtx.fillStyle = PICTO_FOREGROUND;
+    canvasCtx.strokeStyle = PICTO_FOREGROUND;
+    canvasCtx.lineWidth = PICTO_LINEWIDTH;
+
+    var positions = convertPosition(results.poseLandmarks);
 
     // 頭部分の円を描画
-//    var head = dimension([results.poseLandmarks[0], results.poseLandmarks[4], results.poseLandmarks[1]]) * 100;
-    var head = dimension([results.poseLandmarks[11], results.poseLandmarks[12], results.poseLandmarks[23], results.poseLandmarks[24]]) * 10;
-    drawCircle(median([results.poseLandmarks[0], results.poseLandmarks[4], results.poseLandmarks[1]]), head * 35);
+//    var base = dimension([positions[0], positions[4], positions[1]]) * 100;
+    var base = dimension([positions[11], positions[12], positions[23], positions[24]]) / 1000;
+    drawCircle(median([positions[0], positions[4], positions[1]]), base * 300);
 
     // 腕の部分を描画
-    drawParts(results.poseLandmarks[11], results.poseLandmarks[13], head * 23, head * 20);
-    drawParts(results.poseLandmarks[13], results.poseLandmarks[15], head * 20, head * 15);
-    drawParts(results.poseLandmarks[12], results.poseLandmarks[14], head * 23, head * 20);
-    drawParts(results.poseLandmarks[14], results.poseLandmarks[16], head * 20, head * 15);
+    drawParts(positions[11], positions[13], base * 180, base * 150);
+    drawParts(positions[13], positions[15], base * 150, base * 120);
+    drawParts(positions[12], positions[14], base * 180, base * 150);
+    drawParts(positions[14], positions[16], base * 150, base * 120);
 
     // 足の部分を描画
-    var waist = median([results.poseLandmarks[23], results.poseLandmarks[24]]);
-    drawParts(waist, results.poseLandmarks[26], head * 23, head * 20);
-    drawParts(results.poseLandmarks[26], median([results.poseLandmarks[28], results.poseLandmarks[30], results.poseLandmarks[32]]), head * 20, head * 15);
-    drawParts(waist, results.poseLandmarks[25], head * 23, head * 20);
-    drawParts(results.poseLandmarks[25], median([results.poseLandmarks[27], results.poseLandmarks[29], results.poseLandmarks[31]]), head * 20, head * 15);
+    var waist = median([positions[23], positions[24]]);
+    drawParts(waist, positions[26], base * 210, base * 180);
+    drawParts(positions[26], median([positions[28], positions[30], positions[32]]), base * 170, base * 130);
+    drawParts(waist, positions[25], base * 210, base * 180);
+    drawParts(positions[25], median([positions[27], positions[29], positions[31]]), base * 170, base * 130);
+
+    // 道具を描画
+    showTool(tool_index, positions, base);
+
+    // 設備を描画
+    showEquip(equip_index);
+}
+
+function showEquip(mode){
+    switch(mode){
+        case 1:{
+            var r = 20;
+            var pos = { x: 0.2 * canvasElement.width, y: 0.2 * canvasElement.height };
+            strokeEllipse(pos, r * 4, r, 0);
+            break;
+        }
+        case 2: {
+            var r = 40;
+            var pos = { x: 0.8 * canvasElement.width, y: 0.8 * canvasElement.height };
+            drawCircle(pos, r);
+            break;
+        }
+        case 3: {
+            var r = 40;
+            var pos = { x: 0.8 * canvasElement.width, y: 0.2 * canvasElement.height };
+            drawCircle(pos, r);
+            break;
+        }
+    }
+}
+
+function showTool(mode, positions, multi){
+    switch(mode){
+        case 1:{
+            var r = 250 * multi;
+            var d = distance(positions[21], positions[15]);
+            var norm = { x: (positions[21].x - positions[15].x) / d, y: (positions[21].y - positions[15].y) / d };
+            var end = { x: positions[15].x + r * norm.x, y: positions[15].y + r * norm.y };
+            drawCircle(end, r);
+            break;
+        }
+        case 2:{
+            var r = 250 * multi;
+            drawCircle(positions[15], r);
+            drawCircle(positions[16], r);
+            break;
+        }
+        case 3:{
+            var r = multi * 50;
+            var len = 2000 * multi;
+            var d = distance(positions[19], positions[15]);
+            var start = positions[19];
+            var end = { x: positions[19].x + len * (positions[19].x - positions[15].x) / d, y: positions[19].y + len * (positions[19].y - positions[15].y) / d };
+            drawPole(start, end, r, r);
+            break;
+        }
+        case 4:{
+            var r = 250 * multi;
+            var center = median([positions[17], positions[19]]);
+            var d = distance(center, positions[15]);
+            var end = { x: positions[15].x + r * 1.2 * (center.x - positions[15].x) / d, y: positions[15].y + r * (center.y - positions[15].y) / d };
+            drawEllipse(end, r * 1.2, r, Math.atan2(center.y - positions[15].y, center.x - positions[15].x));
+            break;
+        }
+    }
 }
 
 function calcRange( x1, y1, x2, y2, r1, r2 ){
