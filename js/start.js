@@ -158,6 +158,13 @@ function strokeEllipse(pos, rx, ry, rad) {
     canvasCtx.stroke();
 }
 
+function strokeLine(pos1, pos2){
+    canvasCtx.beginPath();
+    canvasCtx.moveTo(pos1.x, pos1.y);
+    canvasCtx.lineTo(pos2.x, pos2.y);
+    canvasCtx.stroke();
+}
+
 function drawPole( pos1, pos2, r){
     var p = calcRange(pos1.x, pos1.y, pos2.x, pos2.y, r, r);
 
@@ -277,6 +284,8 @@ function showEquip(mode){
             var r = 20;
             var pos = { x: 0.2 * canvasElement.width, y: 0.2 * canvasElement.height };
             strokeEllipse(pos, r * 4, r, 0);
+            strokeLine({ x: 0.2 * canvasElement.width - r * 4, y: 0.2 * canvasElement.height }, { x: 0.2 * canvasElement.width - r * 3, y: 0.3 * canvasElement.height });
+            strokeLine({ x: 0.2 * canvasElement.width + r * 4, y: 0.2 * canvasElement.height }, { x: 0.2 * canvasElement.width + r * 3, y: 0.3 * canvasElement.height });
             break;
         }
         case 2: {
